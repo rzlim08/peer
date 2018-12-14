@@ -1,1 +1,1 @@
-{"eye_mask_path": "NA", "train_file": "NA", "test_file": "NA", "use_gsr": "NA", "use_ms": "NA", "motion_scrub": "NA", "motion_threshold": "NA"}
+{"motion_threshold": "0", "use_gsr": "0", "motion_scrub": "Not implemented", "train_file": "PEER001.nii.gz", "test_file": "PEER002.nii.gz", "use_ms": "0", "eye_mask_path": "/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_eye_mask.nii.gz"}
