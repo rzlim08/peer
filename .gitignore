@@ -1,0 +1,7 @@
+peer/.idea*
+data*
+peer/docs*
+docs/*
+docs/_build*
+peer/__pycache__*
+peer/.Rhistory
