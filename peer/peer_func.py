@@ -354,8 +354,8 @@ def train_model(_data, _calibration_points_removed, _stimulus_path):
 
     """
 
-    monitor_width = 1680
-    monitor_height = 1050
+    monitor_width = 1024
+    monitor_height = 768
 
     fixations = pd.read_csv(_stimulus_path)
     x_targets = np.repeat(np.array(fixations['pos_x']), 1) * monitor_width / 2
