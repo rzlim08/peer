@@ -8,20 +8,14 @@ Authors:
 """
 
 import os
-import sys
-import csv
-import json
 import numpy as np
-import pandas as pd
 import nibabel as nib
-from sklearn.svm import SVR
-from sklearn.externals import joblib
 import time
-from peer_func import *
+import peer_func as pr
 
 if __name__ == "__main__":
 
-    project_dir, top_data_dir, stimulus_path = scaffolding()
+    project_dir, top_data_dir, stimulus_path = pr.scaffolding()
 
     os.chdir(project_dir)
 
@@ -34,7 +28,7 @@ if __name__ == "__main__":
         print(('\nPredicting fixations for participant #{}').format(i+1))
         print('====================================================')
 
-        configs = load_config()
+        configs = pr.load_config()
 
         filepath = os.path.join(data_dir, configs['test_file'])
 
@@ -44,7 +38,7 @@ if __name__ == "__main__":
         eye_mask_path = configs['eye_mask_path']
         eye_mask = nib.load(eye_mask_path).get_data()
 
-        data = load_data(filepath)
+        data = pr.load_data(filepath)
 
         for vol in range(data.shape[3]):
             output = np.multiply(eye_mask, data[:, :, :, vol])
@@ -68,25 +62,25 @@ if __name__ == "__main__":
             print('====================================================')
 
             eye_mask_path = configs['eye_mask_path']
-            data = global_signal_regression(data, eye_mask_path)
+            data = pr.global_signal_regression(data, eye_mask_path)
 
         raveled_data = [data[:, :, :, vol].ravel() for vol in np.arange(data.shape[3])]
 
-        xmodel, ymodel, xmodel_name, ymodel_name = load_model(output_dir)
+        xmodel, ymodel, xmodel_name, ymodel_name = pr.load_model(output_dir)
 
         print('\nPredicting Fixations')
         print('====================================================')
 
         print('Fixations saved to specified output directory.')
 
-        x_fix, y_fix = predict_fixations(xmodel, ymodel, raveled_data)
+        x_fix, y_fix = pr.predict_fixations(xmodel, ymodel, raveled_data)
 
-        x_fixname, y_fixname = save_fixations(x_fix, y_fix, xmodel_name, ymodel_name, output_dir)
+        x_fixname, y_fixname = pr.save_fixations(x_fix, y_fix, xmodel_name, ymodel_name, output_dir)
 
         print('\nEstimating Eye Movements')
         print('====================================================')
 
-        estimate_em(x_fix, y_fix, x_fixname, y_fixname, output_dir)
+        pr.estimate_em(x_fix, y_fix, x_fixname, y_fixname, output_dir)
 
         print('Eye movements saved to specified output directory.')
 

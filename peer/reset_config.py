@@ -7,16 +7,17 @@ Authors:
 
 """
 
-from peer_func import *
+import peer_func as pr
+import os
 from pprint import pprint
 
 
 def update_config():
 
-    project_dir, data_dir, stimulus_path = scaffolding()
+    project_dir, data_dir, stimulus_path = pr.scaffolding()
     os.chdir(project_dir)
 
-    configs = load_config()
+    configs = pr.load_config()
 
     print('\n\nThis is your current config file for reference:')
     print('====================================================\n')
@@ -26,7 +27,7 @@ def update_config():
     print('Update the config file:')
     print('====================================================\n')
 
-    updated_configs = set_parameters(configs, new=True)
+    updated_configs = pr.set_parameters(configs, new=True)
 
     print('\n\nThis is your new config file:')
     print('====================================================\n')

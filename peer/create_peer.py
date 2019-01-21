@@ -8,20 +8,14 @@ Authors:
 """
 
 import os
-import sys
-import csv
-import json
 import numpy as np
-import pandas as pd
 import nibabel as nib
-from sklearn.svm import SVR
-from sklearn.externals import joblib
 import time
-from peer_func import *
+import peer_func as pr
 
 if __name__ == "__main__":
 
-    project_dir, top_data_dir, stimulus_path = scaffolding()
+    project_dir, top_data_dir, stimulus_path = pr.scaffolding()
 
     os.chdir(project_dir)
 
@@ -34,7 +28,7 @@ if __name__ == "__main__":
         print(('\nGenerating model for participant #{}').format(i+1))
         print('====================================================')
 
-        configs = load_config()
+        configs = pr.load_config()
 
         filepath = os.path.join(data_dir, configs['train_file'])
 
@@ -44,7 +38,7 @@ if __name__ == "__main__":
         eye_mask_path = configs['eye_mask_path']
         eye_mask = nib.load(eye_mask_path).get_data()
 
-        data = load_data(filepath)
+        data = pr.load_data(filepath)
 
         for vol in range(data.shape[3]):
             output = np.multiply(eye_mask, data[:, :, :, vol])
@@ -65,7 +59,7 @@ if __name__ == "__main__":
             print('\nGlobal Signal Regression')
             print('====================================================')
 
-            data = global_signal_regression(data, eye_mask_path)
+            data = pr.global_signal_regression(data, eye_mask_path)
 
         if int(configs['use_ms']):
 
@@ -75,17 +69,17 @@ if __name__ == "__main__":
             print('====================================================')
 
             ms_filename = configs['motion_scrub']
-            removed_indices = motion_scrub(ms_filename, data_dir, thresh)
+            removed_indices = pr.motion_scrub(ms_filename, data_dir, thresh)
         else:
             removed_indices = None
 
-        processed_data, calibration_points_removed = prepare_data_for_svr(data, removed_indices, eye_mask_path)
+        processed_data, calibration_points_removed = pr.prepare_data_for_svr(data, removed_indices, eye_mask_path)
 
         print('\nTrain PEER')
         print('====================================================')
 
-        xmodel, ymodel = train_model(processed_data, calibration_points_removed, stimulus_path)
+        xmodel, ymodel = pr.train_model(processed_data, calibration_points_removed, stimulus_path)
 
-        save_model(xmodel, ymodel, configs['train_file'], configs['use_ms'], configs['use_gsr'], output_dir)
+        pr.save_model(xmodel, ymodel, configs['train_file'], configs['use_ms'], configs['use_gsr'], output_dir)
 
     print('\n')
