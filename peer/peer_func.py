@@ -354,8 +354,8 @@ def train_model(_data, _calibration_points_removed, _stimulus_path):
 
     """
 
-    monitor_width = 1680
-    monitor_height = 1050
+    monitor_width = 1024
+    monitor_height = 768
 
     fixations = pd.read_csv(_stimulus_path)
     x_targets = np.repeat(np.array(fixations['pos_x']), 1) * monitor_width / 2
@@ -542,7 +542,12 @@ def save_fixations(_x_fix, _y_fix, _xname, _yname, _output_dir):
         y.write(str("{0:.5f},").format(round(fix, 5)))
     y.close()
 
+    split_output = _output_dir.split(sep=os.path.sep)
+    fixation_df = pd.DataFrame({'X': _x_fix, 'Y': _y_fix})
+    fixation_df.to_csv(os.path.join(_output_dir, split_output[-2] + '_fixation.csv'), index_label="scan_num")
+
     return _fix_xname, _fix_yname
+
 
 def estimate_em(_x_fix, _y_fix, _fix_xname, _fix_yname, _output_dir):
     """
