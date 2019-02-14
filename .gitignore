@@ -9,3 +9,6 @@ __pycache__*
 config*
 *.pyc
 *.json
+*zip
+plots
+results
