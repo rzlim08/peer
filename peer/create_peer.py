@@ -19,7 +19,8 @@ if __name__ == "__main__":
 
     os.chdir(project_dir)
     all_processed_data = []
-    all_removed_points = []
+    xtarget_list = []
+    ytarget_list = []
     for i, dataset in enumerate([x for x in os.listdir(top_data_dir) if not x.startswith('.')]):
 
         data_dir = os.path.abspath(os.path.join(top_data_dir, dataset))
@@ -74,15 +75,15 @@ if __name__ == "__main__":
         else:
             removed_indices = None
 
-        processed_data, calibration_points_removed = pr.prepare_data_for_svr(data, removed_indices, eye_mask_path)
+        processed_data, xtargets, ytargets = pr.prepare_data_for_svr(data, removed_indices, stimulus_path)
 
         print('\nTrain PEER')
         print('====================================================')
-        all_processed_data.append(processed_data)
-        all_removed_points.append(calibration_points_removed)
+        all_processed_data.extend(processed_data)
+        xtarget_list.extend(xtargets)
+        ytarget_list.extend(ytargets)
 
-    xmodel, ymodel = pr.train_model([ll for sublist in all_processed_data for ll in sublist], [ll for sublist in all_removed_points for ll in sublist], stimulus_path)
-
+    xmodel, ymodel = pr.train_model(all_processed_data, xtarget_list, ytarget_list)
     pr.save_model(xmodel, ymodel, configs['train_file'], configs['use_ms'], configs['use_gsr'], output_dir)
 
     print('\n')
