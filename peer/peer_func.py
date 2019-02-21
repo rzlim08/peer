@@ -198,7 +198,8 @@ def load_data(_filepath):
         4D numpy array containing fMRI data
 
     """
-
+    print('\nLoad Data')
+    print('====================================================')
     nib_format = nib.load(_filepath)
     _data = nib_format.get_data()
 
@@ -223,7 +224,8 @@ def global_signal_regression(_data, _eye_mask_path):
         4D numpy array containing fMRI data after global signal regression
 
     """
-
+    print('\nGlobal Signal Regression')
+    print('====================================================')
     eye_mask = nib.load(_eye_mask_path).get_data()
 
     global_mask = np.array(eye_mask, dtype=bool)
@@ -271,7 +273,8 @@ def motion_scrub(_ms_filename, _data_dir, _motion_threshold):
         List of volumes to remove for motion scrubbing
 
     """
-
+    print(str('\nMotion Scrubbing').format(_motion_threshold))
+    print('====================================================')
     file_path = os.path.abspath(os.path.join(_data_dir, _ms_filename))
 
     with open(file_path, 'r') as f:

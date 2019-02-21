@@ -13,65 +13,33 @@ import nibabel as nib
 import time
 import peer_func as pr
 
-if __name__ == "__main__":
 
-    project_dir, top_data_dir, stimulus_path = pr.scaffolding()
-
-    os.chdir(project_dir)
+def peer_train(top_data_dir, stimulus_path, data_list):
+    configs = pr.load_config()
     all_processed_data = []
     xtarget_list = []
     ytarget_list = []
-    for i, dataset in enumerate([x for x in os.listdir(top_data_dir) if not x.startswith('.')]):
-
+    outputs = []
+    for i, dataset in enumerate(data_list):
         data_dir = os.path.abspath(os.path.join(top_data_dir, dataset))
-
         output_dir = os.path.abspath(os.path.join(data_dir, 'outputs'))
-
-        print(('\nGenerating model for participant #{}').format(i+1))
+        outputs.append(output_dir)
+        print(('\nGenerating model for participant #{}').format(i + 1))
         print('====================================================')
-
-        configs = pr.load_config()
-
         filepath = os.path.join(data_dir, configs['train_file'])
-
-        print('\nLoad Data')
-        print('====================================================')
-
-        eye_mask_path = configs['eye_mask_path']
-        eye_mask = nib.load(eye_mask_path).get_data()
-
         data = pr.load_data(filepath)
 
+        eye_mask = nib.load(configs['eye_mask_path']).get_data()
         for vol in range(data.shape[3]):
             output = np.multiply(eye_mask, data[:, :, :, vol])
             data[:, :, :, vol] = output
-        volumes = data.shape[3]
-        start_time = time.time()
-        mean_data = np.mean(data, axis=3)
-        std_data = np.std(data, axis=3)
-        std_data[std_data == 0] = 1
 
-        for i in range(volumes):
-            data[:, :, :, i] = (data[:, :, :, i]-mean_data)/std_data
-        elapsed_time = time.time() - start_time
-        print("Elapsed time: " + str(elapsed_time))
+        data = standardize_data(data)
 
         if int(configs['use_gsr']):
-
-            print('\nGlobal Signal Regression')
-            print('====================================================')
-
-            data = pr.global_signal_regression(data, eye_mask_path)
-
+            data = pr.global_signal_regression(data, configs['eye_mask_path'])
         if int(configs['use_ms']):
-
-            thresh = configs['motion_threshold']
-
-            print(str('\nMotion Scrubbing').format(thresh))
-            print('====================================================')
-
-            ms_filename = configs['motion_scrub']
-            removed_indices = pr.motion_scrub(ms_filename, data_dir, thresh)
+            removed_indices = pr.motion_scrub(configs['motion_scrub'], data_dir, configs['motion_threshold'])
         else:
             removed_indices = None
 
@@ -82,8 +50,26 @@ if __name__ == "__main__":
         all_processed_data.extend(processed_data)
         xtarget_list.extend(xtargets)
         ytarget_list.extend(ytargets)
-
     xmodel, ymodel = pr.train_model(all_processed_data, xtarget_list, ytarget_list)
-    pr.save_model(xmodel, ymodel, configs['train_file'], configs['use_ms'], configs['use_gsr'], output_dir)
+    return xmodel, ymodel, configs, outputs
 
-    print('\n')
+
+def standardize_data(data):
+    volumes = data.shape[3]
+    start_time = time.time()
+    mean_data = np.mean(data, axis=3)
+    std_data = np.std(data, axis=3)
+    std_data[std_data == 0] = 1
+    for i in range(volumes):
+        data[:, :, :, i] = (data[:, :, :, i] - mean_data) / std_data
+    elapsed_time = time.time() - start_time
+    print("Elapsed time: " + str(elapsed_time))
+    return data
+
+
+if __name__ == "__main__":
+    project_dir, top_data_dir, stimulus_path = pr.scaffolding()
+    os.chdir(project_dir)
+    data_list = [x for x in os.listdir(top_data_dir) if not x.startswith('.')]
+    xmodel, ymodel, configs, outputs = peer_train(top_data_dir, stimulus_path, data_list)
+    pr.save_model(xmodel, ymodel, configs['train_file'], configs['use_ms'], configs['use_gsr'], outputs)
