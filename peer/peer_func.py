@@ -332,7 +332,7 @@ def prepare_data_for_svr(_data, _removed_time_points, _eye_mask_path):
     return _processed_data, _calibration_points_removed
 
 
-def train_model(_data, _calibration_points_removed, _stimulus_path):
+def train_model(_data, _calibration_points_removed, _stimulus_path, monitor_width=1024, monitor_height=768):
     """
     Trains the SVR model used in the PEER method
 
@@ -344,6 +344,10 @@ def train_model(_data, _calibration_points_removed, _stimulus_path):
         List of calibration points removed if all volumes for a given calibration point were high motion
     _stimulus_path : string
         Pathname of the PEER calibration scan stimuli
+    monitor_width: int
+        monitor width, in pixels
+    monitor_height:int
+        monitor_height, in pixels
 
     Returns
     -------
@@ -353,17 +357,15 @@ def train_model(_data, _calibration_points_removed, _stimulus_path):
         SVR model to estimate eye movements in the y-direction
 
     """
-
-    monitor_width = 1024
-    monitor_height = 768
-
+    # TODO: Move this into the prepare for SVR algorithm function
     fixations = pd.read_csv(_stimulus_path)
     x_targets = np.repeat(np.array(fixations['pos_x']), 1) * monitor_width / 2
     y_targets = np.repeat(np.array(fixations['pos_y']), 1) * monitor_height / 2
 
     x_targets = list(np.delete(np.array(x_targets), _calibration_points_removed))
     y_targets = list(np.delete(np.array(y_targets), _calibration_points_removed))
-
+    x_targets = np.tile(x_targets, 4)
+    y_targets = np.tile(y_targets, 4)
     _xmodel = SVR(kernel='linear', C=100, epsilon=.01, verbose=2)
     _xmodel.fit(_data, x_targets)
     print(x_targets)
@@ -542,7 +544,7 @@ def save_fixations(_x_fix, _y_fix, _xname, _yname, _output_dir):
         y.write(str("{0:.5f},").format(round(fix, 5)))
     y.close()
 
-    split_output = _output_dir.split(sep=os.path.sep)
+    split_output = _output_dir.split(os.path.sep)
     fixation_df = pd.DataFrame({'X': _x_fix, 'Y': _y_fix})
     fixation_df.to_csv(os.path.join(_output_dir, split_output[-2] + '_fixation.csv'), index_label="scan_num")
 
