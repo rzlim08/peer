@@ -60,7 +60,8 @@ def scaffolding():
 
     else:
 
-        for dataset in [x for x in os.listdir(_data_dir) if not x.startswith('.')]:
+        for dataset in [x for x in os.listdir(_data_dir) if not x.startswith('.') and
+                                                            os.path.isdir(os.path.join(_data_dir, x))]:
 
             dataset_path = os.path.abspath(os.path.join(_data_dir, dataset))
 
@@ -411,6 +412,19 @@ def save_model(_xmodel, _ymodel, _train_file, _ms, _gsr, _output_dir):
 
     print('SVR Models saved. PEER can now be applied to new data.')
 
+def standardize_data(data):
+    import time
+    volumes = data.shape[3]
+    start_time = time.time()
+    mean_data = np.mean(data, axis=3)
+    std_data = np.std(data, axis=3)
+    std_data[std_data == 0] = 1
+    for i in range(volumes):
+        data[:, :, :, i] = (data[:, :, :, i] - mean_data) / std_data
+    elapsed_time = time.time() - start_time
+    print("Elapsed time: " + str(elapsed_time))
+    return data
+
 
 def load_model(_output_dir):
     """
@@ -500,6 +514,10 @@ def predict_fixations(_xmodel, _ymodel, _data):
 
     """
 
+    print('\nPredicting Fixations')
+    print('====================================================')
+
+    print('Fixations saved to specified output directory.')
     _x_fix = _xmodel.predict(_data)
     _y_fix = _ymodel.predict(_data)
 
