@@ -1,1 +1,1 @@
-{"use_gsr": "0", "eye_mask_path": "/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_eye_mask.nii.gz", "use_ms": "0", "train_file": "PEER001.nii.gz", "test_file": "MOVIE001.nii.gz", "motion_threshold": "0", "motion_scrub": "Not implemented"}
+{"use_gsr": "0", "eye_mask_path": "/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_eye_mask.nii.gz", "use_ms": "0", "train_file": "PEER2.nii.gz", "test_file": "MOVIE.nii.gz", "motion_threshold": "0", "motion_scrub": "Not implemented"}

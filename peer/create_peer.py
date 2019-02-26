@@ -30,7 +30,7 @@ def peer_train(top_data_dir, stimulus_path, data_list):
             output = np.multiply(eye_mask, data[:, :, :, vol])
             data[:, :, :, vol] = output
 
-
+        data = pr.standardize_data(data)
 
         if int(configs['use_gsr']):
             data = pr.global_signal_regression(data, configs['eye_mask_path'])
@@ -39,7 +39,7 @@ def peer_train(top_data_dir, stimulus_path, data_list):
         else:
             removed_indices = None
 
-        processed_data, xtargets, ytargets = pr.prepare_data_for_svr(data, removed_indices, stimulus_path)
+        processed_data, xtargets, ytargets = pr.prepare_data_for_svr(data, removed_indices, stimulus_path, 1680, 1050)
 
         print('\nTrain PEER')
         print('====================================================')
