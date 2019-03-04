@@ -369,13 +369,11 @@ def train_model(_data, x_targets, y_targets):
         SVR model to estimate eye movements in the y-direction
 
     """
-    # TODO: Move this into the prepare for SVR algorithm function
-
-    _xmodel = SVR(kernel='linear', C=100, epsilon=.01, verbose=2)
+    _xmodel = SVR(kernel='rbf', C=1, epsilon=.01, verbose=1)
     _xmodel.fit(_data, x_targets)
     print(x_targets)
 
-    _ymodel = SVR(kernel='linear', C=100, epsilon=.01, verbose=2)
+    _ymodel = SVR(kernel='rbf', C=1, epsilon=.01, verbose=1)
     _ymodel.fit(_data, y_targets)
 
     return _xmodel, _ymodel
@@ -411,6 +409,7 @@ def save_model(_xmodel, _ymodel, _train_file, _ms, _gsr, _output_dir):
     joblib.dump(_ymodel, y_name)
 
     print('SVR Models saved. PEER can now be applied to new data.')
+
 
 def standardize_data(data):
     import time

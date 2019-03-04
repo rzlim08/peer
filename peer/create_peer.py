@@ -39,7 +39,7 @@ def peer_train(top_data_dir, stimulus_path, data_list):
         else:
             removed_indices = None
 
-        processed_data, xtargets, ytargets = pr.prepare_data_for_svr(data, removed_indices, stimulus_path, 1680, 1050)
+        processed_data, xtargets, ytargets = pr.prepare_data_for_svr(data, removed_indices, stimulus_path)
 
         print('\nTrain PEER')
         print('====================================================')
