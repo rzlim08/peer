@@ -60,7 +60,8 @@ def scaffolding():
 
     else:
 
-        for dataset in [x for x in os.listdir(_data_dir) if not x.startswith('.')]:
+        for dataset in [x for x in os.listdir(_data_dir) if not x.startswith('.') and
+                                                            os.path.isdir(os.path.join(_data_dir, x))]:
 
             dataset_path = os.path.abspath(os.path.join(_data_dir, dataset))
 
@@ -198,7 +199,8 @@ def load_data(_filepath):
         4D numpy array containing fMRI data
 
     """
-
+    print('\nLoad Data')
+    print('====================================================')
     nib_format = nib.load(_filepath)
     _data = nib_format.get_data()
 
@@ -223,7 +225,8 @@ def global_signal_regression(_data, _eye_mask_path):
         4D numpy array containing fMRI data after global signal regression
 
     """
-
+    print('\nGlobal Signal Regression')
+    print('====================================================')
     eye_mask = nib.load(_eye_mask_path).get_data()
 
     global_mask = np.array(eye_mask, dtype=bool)
@@ -271,7 +274,8 @@ def motion_scrub(_ms_filename, _data_dir, _motion_threshold):
         List of volumes to remove for motion scrubbing
 
     """
-
+    print(str('\nMotion Scrubbing').format(_motion_threshold))
+    print('====================================================')
     file_path = os.path.abspath(os.path.join(_data_dir, _ms_filename))
 
     with open(file_path, 'r') as f:
@@ -285,7 +289,7 @@ def motion_scrub(_ms_filename, _data_dir, _motion_threshold):
     return _removed_indices
 
 
-def prepare_data_for_svr(_data, _removed_time_points, _eye_mask_path):
+def prepare_data_for_svr(_data, _removed_time_points, _stimulus_path, monitor_width=1024, monitor_height=768):
     """
     Preprocess fMRI data prior to SVR model generation
 
@@ -295,6 +299,12 @@ def prepare_data_for_svr(_data, _removed_time_points, _eye_mask_path):
         4D numpy array containing fMRI data after global signal regression
     _removed_time_points : int
         List of volumes to remove for motion scrubbing
+    _stimulus_path : string
+        Pathname of the PEER calibration scan stimuli
+    monitor_width: int
+        monitor width, in pixels
+    monitor_height:int
+        monitor_height, in pixels
     Returns
     -------
     _processed_data : float
@@ -324,30 +334,32 @@ def prepare_data_for_svr(_data, _removed_time_points, _eye_mask_path):
 
             _calibration_points_removed.append(num)
 
-    if  (_calibration_points_removed) and (_removed_time_points):
+    if(_calibration_points_removed) and (_removed_time_points):
         print(str('The {}th calibration point(s) were removed.').format(_calibration_points_removed))
     elif (not _calibration_points_removed) and (_removed_time_points):
         print(str('No calibration points were removed.'))
 
-    return _processed_data, _calibration_points_removed
+    fixations = pd.read_csv(_stimulus_path)
+    x_targets = np.repeat(np.array(fixations['pos_x']), 1) * monitor_width / 2
+    y_targets = np.repeat(np.array(fixations['pos_y']), 1) * monitor_height / 2
+
+    x_targets = list(np.delete(np.array(x_targets), _calibration_points_removed))
+    y_targets = list(np.delete(np.array(y_targets), _calibration_points_removed))
+
+    return _processed_data, x_targets, y_targets
 
 
-def train_model(_data, _calibration_points_removed, _stimulus_path, monitor_width=1024, monitor_height=768):
+def train_model(_data, x_targets, y_targets):
     """
     Trains the SVR model used in the PEER method
 
     Parameters
     ----------
-    _data : float
+    _data : list
         List of numpy arrays, where each array contains the averaged intensity values for each calibration point
     _calibration_points_removed : int
         List of calibration points removed if all volumes for a given calibration point were high motion
-    _stimulus_path : string
-        Pathname of the PEER calibration scan stimuli
-    monitor_width: int
-        monitor width, in pixels
-    monitor_height:int
-        monitor_height, in pixels
+
 
     Returns
     -------
@@ -357,20 +369,11 @@ def train_model(_data, _calibration_points_removed, _stimulus_path, monitor_widt
         SVR model to estimate eye movements in the y-direction
 
     """
-    # TODO: Move this into the prepare for SVR algorithm function
-    fixations = pd.read_csv(_stimulus_path)
-    x_targets = np.repeat(np.array(fixations['pos_x']), 1) * monitor_width / 2
-    y_targets = np.repeat(np.array(fixations['pos_y']), 1) * monitor_height / 2
-
-    x_targets = list(np.delete(np.array(x_targets), _calibration_points_removed))
-    y_targets = list(np.delete(np.array(y_targets), _calibration_points_removed))
-    x_targets = np.tile(x_targets, 4)
-    y_targets = np.tile(y_targets, 4)
-    _xmodel = SVR(kernel='linear', C=100, epsilon=.01, verbose=2)
+    _xmodel = SVR(kernel='rbf', C=1, epsilon=.01, verbose=1)
     _xmodel.fit(_data, x_targets)
     print(x_targets)
 
-    _ymodel = SVR(kernel='linear', C=100, epsilon=.01, verbose=2)
+    _ymodel = SVR(kernel='rbf', C=1, epsilon=.01, verbose=1)
     _ymodel.fit(_data, y_targets)
 
     return _xmodel, _ymodel
@@ -406,6 +409,20 @@ def save_model(_xmodel, _ymodel, _train_file, _ms, _gsr, _output_dir):
     joblib.dump(_ymodel, y_name)
 
     print('SVR Models saved. PEER can now be applied to new data.')
+
+
+def standardize_data(data):
+    import time
+    volumes = data.shape[3]
+    start_time = time.time()
+    mean_data = np.mean(data, axis=3)
+    std_data = np.std(data, axis=3)
+    std_data[std_data == 0] = 1
+    for i in range(volumes):
+        data[:, :, :, i] = (data[:, :, :, i] - mean_data) / std_data
+    elapsed_time = time.time() - start_time
+    print("Elapsed time: " + str(elapsed_time))
+    return data
 
 
 def load_model(_output_dir):
@@ -496,6 +513,10 @@ def predict_fixations(_xmodel, _ymodel, _data):
 
     """
 
+    print('\nPredicting Fixations')
+    print('====================================================')
+
+    print('Fixations saved to specified output directory.')
     _x_fix = _xmodel.predict(_data)
     _y_fix = _ymodel.predict(_data)
 
