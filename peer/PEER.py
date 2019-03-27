@@ -246,7 +246,7 @@ class PEER:
         for ind, data_path in enumerate(data_paths):
             print('\nGenerating model for participant #{}'.format(ind + 1))
             print('====================================================')
-            data = self.load_and_mask_data(data_path)
+            data = self.preprocess_train_data(data_path)
             if perform_motion_scrub:
                 removed_indices = self.motion_scrub(motion_scrub_path, motion_threshold)
             else:
@@ -260,15 +260,20 @@ class PEER:
         self.Y = (xtarget_list, ytarget_list)
         return processed_data, xtarget_list, ytarget_list
 
-    def load_and_mask_data(self, data_path):
+    def preprocess_train_data(self, data_path):
         data = self.load_data(data_path)
+        data = self.mask_data(data)
+        data = self.standardize_data(data)
+        if self.use_gsr:
+            data = self.global_signal_regression(data, self.eye_mask_path)
+        return data
+
+    def mask_data(self, data):
         eye_mask = nib.load(self.eye_mask_path).get_data()
         for vol in range(data.shape[3]):
             output = np.multiply(eye_mask, data[:, :, :, vol])
             data[:, :, :, vol] = output
-        data = self.standardize_data(data)
-        if self.use_gsr:
-            data = self.global_signal_regression(data, self.eye_mask_path)
+
         return data
 
     # TODO:rename "peer_algorithm"
@@ -294,7 +299,7 @@ class PEER:
         for ind, data_dir in enumerate(data_list):
             print(('\nPredicting fixations for participant #{}').format(ind + 1))
             print('====================================================')
-            data = self.load_and_mask_data(data_dir)
+            data = self.preprocess_train_data(data_dir)
             raveled_data = [data[:, :, :, vol].ravel() for vol in np.arange(data.shape[3])]
             del data
             x_fix, y_fix = self.predict_fixations(xmodel, ymodel, raveled_data)
