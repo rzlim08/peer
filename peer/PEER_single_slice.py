@@ -3,6 +3,7 @@ import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class PEER_single_slice(PEER):
 
     def mask_data(self, data):
@@ -23,4 +24,4 @@ class PEER_single_slice(PEER):
             data[:, :, :, vol] = output
             masked.append(data[:,:,:,vol][eye_mask==1])
 
-        return np.array(masked)
+        return data

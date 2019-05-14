@@ -2,6 +2,7 @@ import nibabel as nib
 import numpy as np
 import csv
 import pandas as pd
+import os
 from sklearn.svm import SVR
 
 
@@ -40,6 +41,10 @@ class PEER:
         print('Training data Loaded')
 
         return _data
+
+    def save_data(self, xfix, yfix, name="subj"):
+        fixation_df = pd.DataFrame({'X': xfix, 'Y': yfix})
+        fixation_df.to_csv(os.path.join(self.output_dir, name + '_fixation.csv'), index_label="scan_num")
 
     def standardize_data(self, data):
 
