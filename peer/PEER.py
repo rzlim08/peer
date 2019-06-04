@@ -4,6 +4,7 @@ import csv
 import pandas as pd
 import os
 from sklearn.svm import SVR
+import matplotlib.pyplot as plt
 
 
 class PEER:
@@ -17,6 +18,8 @@ class PEER:
         self.Y = []
         self.x_fixations = []
         self.y_fixations = []
+        self.mean = []
+        self.std = []
 
     def load_data(self, _filepath):
         """
@@ -48,16 +51,19 @@ class PEER:
 
     def standardize_data(self, data):
 
-        import time
         volumes = data.shape[3]
-        start_time = time.time()
         mean_data = np.mean(data, axis=3)
         std_data = np.std(data, axis=3)
         std_data[std_data == 0] = 1
+        self.mean = mean_data
+        self.std = std_data
         for i in range(volumes):
             data[:, :, :, i] = (data[:, :, :, i] - mean_data) / std_data
-        elapsed_time = time.time() - start_time
-        print("Elapsed time: " + str(elapsed_time))
+        return data
+
+    def standardize_data_test(self, data):
+
+        data = (data - self.mean) / self.std
         return data
 
     def global_signal_regression(self, _data, _eye_mask_path):
@@ -275,9 +281,15 @@ class PEER:
 
     def mask_data(self, data):
         eye_mask = nib.load(self.eye_mask_path).get_data()
-        for vol in range(data.shape[3]):
-            output = np.multiply(eye_mask, data[:, :, :, vol])
-            data[:, :, :, vol] = output
+        if len(data.shape) > 3:
+            for vol in range(data.shape[3]):
+                output = np.multiply(eye_mask, data[:, :, :, vol])
+                data[:, :, :, vol] = output
+        else:
+            output = np.multiply(eye_mask, data[:, :, :])
+            data[:, :, :] = output
+            plt.imshow(output[:, :, 14])
+            plt.savefig('eye_mask.png')
 
         return data
 
