@@ -240,14 +240,17 @@ class PEER:
         elif (not _calibration_points_removed) and (_removed_time_points):
             print(str('No calibration points were removed.'))
 
+        x_targets, y_targets = self.make_targets(_calibration_points_removed, _stimulus_path)
+
+        return _processed_data, x_targets, y_targets
+
+    def make_targets(self, _calibration_points_removed, _stimulus_path):
         fixations = pd.read_csv(_stimulus_path)
         x_targets = np.repeat(np.array(fixations['pos_x']), 1) * self.monitor_width / 2
         y_targets = np.repeat(np.array(fixations['pos_y']), 1) * self.monitor_height / 2
-
         x_targets = list(np.delete(np.array(x_targets), _calibration_points_removed))
         y_targets = list(np.delete(np.array(y_targets), _calibration_points_removed))
-
-        return _processed_data, x_targets, y_targets
+        return x_targets, y_targets
 
     def load_peer(self, data_paths, stimulus_paths, perform_motion_scrub=False,
                   motion_scrub_path="", motion_threshold=-1):
