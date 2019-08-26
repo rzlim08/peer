@@ -1,10 +1,10 @@
 import os
-from PEER import PEER
+from PEER_single_slice import PEER_single_slice
 import pandas as pd
-
+import numpy as np
 
 def initialize_class(dir_path):
-    peer_class = PEER(
+    peer_class = PEER_single_slice(
         eye_mask_path='/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_eye_mask.nii.gz',
         use_gsr=False,
         monitor_width=1680,
@@ -27,20 +27,22 @@ def test():
     stim_vals = os.path.join(data_path, 'stim_vals.csv')
     peer_class = initialize_class(dir_path)
     # Get peer fMRI file
-    fmri_path = os.path.join(data_path, 'subj3', 'PEER1.nii.gz')
+    fmri_path = os.path.join(data_path, 'subj1', 'PEER1.nii.gz')
     peer_class.load_peer([fmri_path], [stim_vals])
     xmodel, ymodel = peer_class.train_peer()
 
     # Get peer test file
-    test_path = os.path.join(data_path, 'subj3', 'MOVIE.nii.gz')
+    test_path = os.path.join(data_path, 'subj1', 'MOVIE.nii.gz')
 
     peer_class.test_peer([test_path], xmodel, ymodel)
-    peer_class.save_data(peer_class.x_fixations[0], peer_class.y_fixations[0], "subj3_movie")
-
-    test = pd.read_csv(os.path.join(data_path, 'subj1', 'outputs', 'subj1_fixation.csv'))
+    peer_class.save_data(peer_class.x_fixations[0], peer_class.y_fixations[0], "single_slice_movie")
+    test = pd.read_csv(os.path.join(data_path, 'subj1', 'outputs', 'subj1_movie_fixation.csv'))
     if not compare_fixations(peer_class.x_fixations[0], test['X']):
+
+        print(np.corrcoef(peer_class.x_fixations[0], test['X']))
         print("FAIL on X")
     if not compare_fixations(peer_class.y_fixations[0], test['Y']):
+        print(np.corrcoef(peer_class.y_fixations[0], test['Y']))
         print("FAIL on Y")
     print("DONE")
 
@@ -58,16 +60,20 @@ def test_all_subjects():
         xmodel, ymodel = peer_class.train_peer()
 
         # Get peer test file
-        test_path = os.path.join(data_path, subject_code, 'MOVIE.nii.gz')
+        test_path = os.path.join(data_path, subject_code, 'PEER2.nii.gz')
 
         peer_class.test_peer([test_path], xmodel, ymodel)
-        peer_class.save_data(peer_class.x_fixations[0], peer_class.y_fixations[0], subject_code+'_movie')
+        peer_class.save_data(peer_class.x_fixations[0], peer_class.y_fixations[0], subject_code + "_single_slice")
         test = pd.read_csv(os.path.join(data_path, subject_code, 'outputs', subject_code + '_fixation.csv'))
         if not compare_fixations(peer_class.x_fixations[0], test['X']):
+
+            print(np.corrcoef(peer_class.x_fixations[0], test['X']))
             print("FAIL on X")
         if not compare_fixations(peer_class.y_fixations[0], test['Y']):
+            print(np.corrcoef(peer_class.y_fixations[0], test['Y']))
             print("FAIL on Y")
         print("DONE")
+
 
 if __name__ == '__main__':
     test_all_subjects()

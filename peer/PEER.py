@@ -2,7 +2,9 @@ import nibabel as nib
 import numpy as np
 import csv
 import pandas as pd
+import os
 from sklearn.svm import SVR
+import matplotlib.pyplot as plt
 
 
 class PEER:
@@ -16,6 +18,8 @@ class PEER:
         self.Y = []
         self.x_fixations = []
         self.y_fixations = []
+        self.mean = []
+        self.std = []
 
     def load_data(self, _filepath):
         """
@@ -41,18 +45,25 @@ class PEER:
 
         return _data
 
+    def save_data(self, xfix, yfix, name="subj"):
+        fixation_df = pd.DataFrame({'X': xfix, 'Y': yfix})
+        fixation_df.to_csv(os.path.join(self.output_dir, name + '_fixation.csv'), index_label="scan_num")
+
     def standardize_data(self, data):
 
-        import time
         volumes = data.shape[3]
-        start_time = time.time()
         mean_data = np.mean(data, axis=3)
         std_data = np.std(data, axis=3)
         std_data[std_data == 0] = 1
+        self.mean = mean_data
+        self.std = std_data
         for i in range(volumes):
             data[:, :, :, i] = (data[:, :, :, i] - mean_data) / std_data
-        elapsed_time = time.time() - start_time
-        print("Elapsed time: " + str(elapsed_time))
+        return data
+
+    def standardize_data_test(self, data):
+
+        data = (data - self.mean) / self.std
         return data
 
     def global_signal_regression(self, _data, _eye_mask_path):
@@ -229,14 +240,17 @@ class PEER:
         elif (not _calibration_points_removed) and (_removed_time_points):
             print(str('No calibration points were removed.'))
 
+        x_targets, y_targets = self.make_targets(_calibration_points_removed, _stimulus_path)
+
+        return _processed_data, x_targets, y_targets
+
+    def make_targets(self, _calibration_points_removed, _stimulus_path):
         fixations = pd.read_csv(_stimulus_path)
         x_targets = np.repeat(np.array(fixations['pos_x']), 1) * self.monitor_width / 2
         y_targets = np.repeat(np.array(fixations['pos_y']), 1) * self.monitor_height / 2
-
         x_targets = list(np.delete(np.array(x_targets), _calibration_points_removed))
         y_targets = list(np.delete(np.array(y_targets), _calibration_points_removed))
-
-        return _processed_data, x_targets, y_targets
+        return x_targets, y_targets
 
     def load_peer(self, data_paths, stimulus_paths, perform_motion_scrub=False,
                   motion_scrub_path="", motion_threshold=-1):
@@ -270,9 +284,15 @@ class PEER:
 
     def mask_data(self, data):
         eye_mask = nib.load(self.eye_mask_path).get_data()
-        for vol in range(data.shape[3]):
-            output = np.multiply(eye_mask, data[:, :, :, vol])
-            data[:, :, :, vol] = output
+        if len(data.shape) > 3:
+            for vol in range(data.shape[3]):
+                output = np.multiply(eye_mask, data[:, :, :, vol])
+                data[:, :, :, vol] = output
+        else:
+            output = np.multiply(eye_mask, data[:, :, :])
+            data[:, :, :] = output
+            plt.imshow(output[:, :, 14])
+            plt.savefig('eye_mask.png')
 
         return data
 
