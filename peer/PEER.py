@@ -8,7 +8,16 @@ import matplotlib.pyplot as plt
 
 
 class PEER:
+    "Run PEER in an extendable class" 
     def __init__(self, eye_mask_path, use_gsr, monitor_width, monitor_height, output_dir):
+        """ 
+        PEER runner class:
+          load_peer
+          train_peer
+          test_peer
+          save
+       """
+          
         self.eye_mask_path = eye_mask_path
         self.use_gsr = use_gsr
         self.monitor_width = monitor_width
